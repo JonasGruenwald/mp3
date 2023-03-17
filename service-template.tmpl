@@ -1,0 +1,10 @@
+[Unit]
+Description=An application managed by pmu
+After=network.target
+[Service]
+Environment=
+User={{ .UserName }}
+WorkingDirectory={{ .WorkingDir }}
+ExecStart={{ .ExecStart }}
+[Install]
+WantedBy=multi-user.target
