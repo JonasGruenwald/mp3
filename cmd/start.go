@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"github.com/spf13/cobra"
 	"os"
-	"os/exec"
 	"os/user"
 	"path"
+	"path/filepath"
 	"strings"
 	"text/template"
 )
@@ -25,7 +25,7 @@ var settings = ServiceSettings{}
 
 // startCmd represents the start command
 var startCmd = &cobra.Command{
-	Use:   "start",
+	Use:   "start [service]",
 	Short: "Start an application with pmu",
 	Long: `Supply the name of an application entry point in your current working directory,
 and pmu will create a daemonized service for it for you.
@@ -34,6 +34,7 @@ Pass the name of an existing pmu-created service to start it
 Examples:
 
 # Spin up new service:
+pmu start app.js
 pmu start bashscript.sh
 pmu start python-app.py
 pmu start ./binary-file -- --port 1520
@@ -57,15 +58,16 @@ pmu start my-app
 		// path to potential new app to create service for
 		var targetPath = path.Join(workingDir, target)
 		// path to potential existing service to start
-		var serviceName = fmt.Sprintf("%s%s.service", serviceNamePrefix, target)
+		var serviceName = getServiceName(target)
 		var targetServicePath = path.Join(systemCtlUnitDir, serviceName)
 
 		if settings.AppName != "" || (fileExists(targetPath) && !fileExists(targetServicePath)) {
 			// We want to create a new service
 			// Supplement info for service file
-			if settings.AppName != "" {
-				serviceName = fmt.Sprintf("%s%s.service", serviceNamePrefix, settings.AppName)
+			if settings.AppName == "" {
+				settings.AppName = strings.TrimSuffix(filepath.Base(targetPath), filepath.Ext(targetPath))
 			}
+			serviceName = fmt.Sprintf("%s%s.service", serviceNamePrefix, settings.AppName)
 			settings.ExecStart = targetPath
 			// If we are dealing with a script file, we need to add the interpreter
 			if strings.HasSuffix(target, ".js") {
@@ -99,12 +101,15 @@ pmu start my-app
 			// Constructing the service file
 			tmpl, err := template.ParseFiles("service-template.tmpl")
 			if err != nil {
-				fatal("Error parsing template file for " + serviceName)
+				fmt.Println(err)
+				fatal("Error parsing template file")
 			}
 
 			// create a new file
-			file, err := os.Create(path.Join(systemCtlUnitDir, serviceName))
+			serviceFilePath := path.Join(systemCtlUnitDir, serviceName)
+			file, err := os.Create(serviceFilePath)
 			if err != nil {
+				fmt.Println(err)
 				fatal("Error touching service file for " + serviceName)
 			}
 			defer func(file *os.File) {
@@ -120,17 +125,14 @@ pmu start my-app
 				fatal("Error generating service file for " + serviceName)
 			}
 
-			fmt.Printf("Created new service %s", serviceName)
+			fmt.Printf("Created new service file %s", serviceFilePath)
+			runLoud("systemctl", "daemon-reload")
+			runLoud("systemctl", "enable", serviceName)
+			runLoud("systemctl", "start", serviceName)
 
-			// execute template and write to file
 		} else if !fileExists(targetPath) {
 			// We want to start an existing service
-			cmd := exec.Command("systemctl", "start", serviceName)
-			output, err := cmd.CombinedOutput()
-			fmt.Printf("%s\n", output)
-			if err != nil {
-				fatal(fmt.Sprintf("pmu encountered an error trying to start the service %s", serviceName))
-			}
+			runLoud("systemctl", "start", serviceName)
 		} else {
 			// We don't know what we want
 			fatal(fmt.Sprintf(`
@@ -139,12 +141,6 @@ they could either refer to an app in your current working directory %s, or an ex
 it should start.
 `, targetPath, serviceName))
 		}
-
-		fmt.Println("Start called !")
-		fmt.Println(fmt.Sprintf("Delay: %dms", settings.RestartDelay))
-		fmt.Println(fmt.Sprintf("Name: %s", settings.AppName))
-		fmt.Println(fmt.Sprintf("NoAutorestart: %t", settings.NoAutorestart))
-		fmt.Println(fmt.Sprintf("Args: %s", args))
 	},
 }
 
