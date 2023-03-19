@@ -14,7 +14,7 @@ var stopCmd = &cobra.Command{
 	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		var serviceName = getServiceName(args[0])
-		runLoud("systemctl", "stop", serviceName)
+		runShell("systemctl", "stop", serviceName)
 	},
 }
 

@@ -11,7 +11,7 @@ import (
 var rootCmd = &cobra.Command{
 	Use:   "mp3",
 	Short: "A process management utility (not really)",
-	Long: `mp3 is a small tool that offers a CLI similar to that of pm2, 
+	Long: `MP3 is a small tool that offers a CLI similar to that of pm2, 
 but instead of running a daemon to manage processes, it just creates systemd unit services files, 
 and forwards commands to systemctl and journalctl.
 It provides the ease of use offered by pm2 and the ubiquity and reliability of systemd 

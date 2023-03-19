@@ -39,11 +39,11 @@ You can pass on args directly to journalctl with --
 		}
 
 		if len(args) > 1 {
-			runLoud("journalctl", append([]string{"run", "-d"}, args...)...)
+			runShell("journalctl", append([]string{"run", "-d"}, args...)...)
 		} else if len(args) > 0 {
-			runLoud("journalctl", "-u", getServiceName(args[0]), "-n", "100", "-f", "-o", "short")
+			runShell("journalctl", "-u", getServiceName(args[0]), "-n", "100", "-f", "-o", "short")
 		} else {
-			runLoud("journalctl", "-u", "mp3.*", "-n", "100", "-f", "-o", "short")
+			runShell("journalctl", "-u", "mp3.*", "-n", "100", "-f", "-o", "short")
 		}
 	},
 }

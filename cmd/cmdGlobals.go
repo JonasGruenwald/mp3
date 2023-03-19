@@ -50,15 +50,6 @@ func runSilent(name string, args ...string) {
 	}
 }
 
-func runLoud(name string, args ...string) {
-	cmd := exec.Command(name, args...)
-	output, err := cmd.CombinedOutput()
-	fmt.Printf("%s\n", output)
-	if err != nil {
-		fatal(fmt.Sprintf("Error running command %s %s", name, args))
-	}
-}
-
 func runShell(name string, args ...string) {
 	cmd := exec.Command(name, args...)
 	cmd.Stdin = os.Stdin

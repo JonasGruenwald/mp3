@@ -18,16 +18,16 @@ var deleteCmd = &cobra.Command{
 		var serviceName = getServiceName(args[0])
 		var targetServicePath = path.Join(systemCtlUnitDir, serviceName)
 
-		runLoud("systemctl", "stop", serviceName)
-		runLoud("systemctl", "disable", serviceName)
+		runShell("systemctl", "stop", serviceName)
+		runShell("systemctl", "disable", serviceName)
 
 		e := os.Remove(targetServicePath)
 		if e != nil {
 			fatal(e.Error())
 		}
 
-		runLoud("systemctl", "daemon-reload")
-		runLoud("systemctl", "reset-failed", serviceName)
+		runShell("systemctl", "daemon-reload")
+		runShell("systemctl", "reset-failed", serviceName)
 
 	},
 }

@@ -14,10 +14,10 @@ var restartCmd = &cobra.Command{
 	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		if args[0] == "all" {
-			runLoud("systemctl", "restart", "*.mp3")
+			runShell("systemctl", "restart", "*.mp3")
 		} else {
 			var serviceName = getServiceName(args[0])
-			runLoud("systemctl", "restart", serviceName)
+			runShell("systemctl", "restart", serviceName)
 		}
 	},
 }

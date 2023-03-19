@@ -62,12 +62,7 @@ mp3 start my-app
 		var serviceName = getServiceName(target)
 		var targetServicePath = path.Join(systemCtlUnitDir, serviceName)
 
-		fmt.Println("Target path: " + targetPath)
-		fmt.Println("Service path: " + targetServicePath)
-		fmt.Println("TP exists %v SP exists %v", fileExists(targetPath), fileExists(targetServicePath))
-
 		if settings.AppName != "" || settings.CreateServiceOnly || (fileExists(targetPath) && !fileExists(targetServicePath)) {
-			fmt.Println("Creating new service")
 			// We want to create a new service
 			// Supplement info for service file
 			if settings.AppName == "" {
@@ -126,15 +121,15 @@ mp3 start my-app
 			}
 
 			fmt.Printf("Created new service file %s", serviceFilePath)
-			runLoud("systemctl", "daemon-reload")
+			runShell("systemctl", "daemon-reload")
 			if !settings.CreateServiceOnly {
-				runLoud("systemctl", "enable", serviceName)
-				runLoud("systemctl", "start", serviceName)
+				runShell("systemctl", "enable", serviceName)
+				runShell("systemctl", "start", serviceName)
 			}
 		} else if !fileExists(targetPath) {
 			// We want to start an existing service
 			fmt.Println("Starting existing service")
-			runLoud("systemctl", "start", serviceName)
+			runShell("systemctl", "start", serviceName)
 		} else {
 			// We don't know what we want
 			fatal(fmt.Sprintf(`

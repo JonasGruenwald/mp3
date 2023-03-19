@@ -12,7 +12,7 @@ var statusCmd = &cobra.Command{
 	Use:   "status",
 	Short: "List all services managed by mp3",
 	Run: func(cmd *cobra.Command, args []string) {
-		runLoud("systemctl", "list-units", "mp3.*", "--full", "--all", "--no-pager")
+		runShell("systemctl", "list-units", "mp3.*", "--full", "--all", "--no-pager")
 	},
 }
 
