@@ -12,13 +12,14 @@ import (
 )
 
 type ServiceSettings struct {
-	AppName       string
-	RestartDelay  int
-	NoAutorestart bool
-	Interpreter   string
-	UserName      string
-	WorkingDir    string
-	ExecStart     string
+	AppName           string
+	RestartDelay      int
+	NoAutorestart     bool
+	Interpreter       string
+	UserName          string
+	WorkingDir        string
+	ExecStart         string
+	CreateServiceOnly bool
 }
 
 var settings = ServiceSettings{}
@@ -26,21 +27,21 @@ var settings = ServiceSettings{}
 // startCmd represents the start command
 var startCmd = &cobra.Command{
 	Use:   "start [service]",
-	Short: "Start an application with pmu",
+	Short: "Start an application with mp3",
 	Long: `Supply the name of an application entry point in your current working directory,
-and pmu will create a daemonized service for it for you.
-Pass the name of an existing pmu-created service to start it
+and mp3 will create a daemonized service for it for you.
+Pass the name of an existing mp3-created service to start it
 
 Examples:
 
 # Spin up new service:
-pmu start app.js
-pmu start bashscript.sh
-pmu start python-app.py
-pmu start ./binary-file -- --port 1520
+mp3 start app.js
+mp3 start bashscript.sh
+mp3 start python-app.py
+mp3 start ./binary-file -- --port 1520
 
 # Start existing service
-pmu start my-app
+mp3 start my-app
 
 `,
 	Args: cobra.MinimumNArgs(1),
@@ -61,7 +62,12 @@ pmu start my-app
 		var serviceName = getServiceName(target)
 		var targetServicePath = path.Join(systemCtlUnitDir, serviceName)
 
-		if settings.AppName != "" || (fileExists(targetPath) && !fileExists(targetServicePath)) {
+		fmt.Println("Target path: " + targetPath)
+		fmt.Println("Service path: " + targetServicePath)
+		fmt.Println("TP exists %v SP exists %v", fileExists(targetPath), fileExists(targetServicePath))
+
+		if settings.AppName != "" || settings.CreateServiceOnly || (fileExists(targetPath) && !fileExists(targetServicePath)) {
+			fmt.Println("Creating new service")
 			// We want to create a new service
 			// Supplement info for service file
 			if settings.AppName == "" {
@@ -99,7 +105,7 @@ pmu start my-app
 			}
 
 			// Constructing the service file
-			tmpl, err := template.ParseFiles("service-template.tmpl")
+			tmpl, err := template.ParseFS(TemplateFs, "templates/default-service.tmpl")
 			if err != nil {
 				fmt.Println(err)
 				fatal("Error parsing template file")
@@ -112,12 +118,6 @@ pmu start my-app
 				fmt.Println(err)
 				fatal("Error touching service file for " + serviceName)
 			}
-			defer func(file *os.File) {
-				err := file.Close()
-				if err != nil {
-
-				}
-			}(file)
 
 			// apply the template to the vars map and write the result to file.
 			err = tmpl.Execute(file, settings)
@@ -127,17 +127,19 @@ pmu start my-app
 
 			fmt.Printf("Created new service file %s", serviceFilePath)
 			runLoud("systemctl", "daemon-reload")
-			runLoud("systemctl", "enable", serviceName)
-			runLoud("systemctl", "start", serviceName)
-
+			if !settings.CreateServiceOnly {
+				runLoud("systemctl", "enable", serviceName)
+				runLoud("systemctl", "start", serviceName)
+			}
 		} else if !fileExists(targetPath) {
 			// We want to start an existing service
+			fmt.Println("Starting existing service")
 			runLoud("systemctl", "start", serviceName)
 		} else {
 			// We don't know what we want
 			fatal(fmt.Sprintf(`
-The arguments you provided for 'pmu start' are ambivalent,
-they could either refer to an app in your current working directory %s, or an existing service %s, so pmu does not know what
+The arguments you provided for 'mp3 start' are ambivalent,
+they could either refer to an app in your current working directory %s, or an existing service %s, so mp3 does not know what
 it should start.
 `, targetPath, serviceName))
 		}
@@ -151,6 +153,7 @@ func init() {
 	startCmd.Flags().StringVarP(&settings.UserName, "user", "u", "", "Specify user who should start the app")
 	startCmd.Flags().IntVar(&settings.RestartDelay, "restart-delay", 500, "Delay between automatic restarts")
 	startCmd.Flags().BoolVar(&settings.NoAutorestart, "no-autorestart", false, "Do not auto restart app")
+	startCmd.Flags().BoolVar(&settings.CreateServiceOnly, "create-only", false, "Create a service file only, do not start or enable")
 	startCmd.Flags().StringVar(&settings.Interpreter, "interpreter", "", "Set a specific interpreter to use for executing app, default for .js is /usr/bin/node")
 	startCmd.Flags().StringVar(&settings.WorkingDir, "cwd", "", "run target script from path <cwd>")
 }

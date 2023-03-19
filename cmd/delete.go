@@ -13,7 +13,7 @@ import (
 // deleteCmd represents the delete command
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
-	Short: "Delete a service definition that was created with pmu",
+	Short: "Delete a service definition that was created with mp3",
 	Run: func(cmd *cobra.Command, args []string) {
 		var serviceName = getServiceName(args[0])
 		var targetServicePath = path.Join(systemCtlUnitDir, serviceName)

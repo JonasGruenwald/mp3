@@ -7,21 +7,21 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// restartCmd represents the restart command
-var restartCmd = &cobra.Command{
-	Use:   "restart",
-	Short: "Restart a running service",
+// reloadCmd represents the reload command
+var reloadCmd = &cobra.Command{
+	Use:   "reload",
+	Short: "Reload a running service (must be supported by app)",
 	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		if args[0] == "all" {
-			runLoud("systemctl", "restart", "*.mp3")
+			runLoud("systemctl", "reload", "*.mp3")
 		} else {
 			var serviceName = getServiceName(args[0])
-			runLoud("systemctl", "restart", serviceName)
+			runLoud("systemctl", "reload", serviceName)
 		}
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(restartCmd)
+	rootCmd.AddCommand(reloadCmd)
 }

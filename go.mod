@@ -1,4 +1,4 @@
-module github.com/JonasGruenwald/pmu
+module github.com/JonasGruenwald/mp3
 
 go 1.20
 
