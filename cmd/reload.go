@@ -14,7 +14,7 @@ var reloadCmd = &cobra.Command{
 	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		if args[0] == "all" {
-			runShell("systemctl", "reload", "*.mp3")
+			runShell("systemctl", "reload", "mp3.*")
 		} else {
 			var serviceName = getServiceName(args[0])
 			runShell("systemctl", "reload", serviceName)

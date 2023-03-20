@@ -4,6 +4,7 @@ Copyright © 2023 Jonas Grünwald
 package cmd
 
 import (
+	"fmt"
 	"github.com/spf13/cobra"
 )
 
@@ -14,7 +15,8 @@ var restartCmd = &cobra.Command{
 	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		if args[0] == "all" {
-			runShell("systemctl", "restart", "*.mp3")
+			fmt.Println("Restarting all services!")
+			runShell("systemctl", "restart", "mp3.*")
 		} else {
 			var serviceName = getServiceName(args[0])
 			runShell("systemctl", "restart", serviceName)

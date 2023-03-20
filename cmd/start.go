@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/spf13/cobra"
 	"os"
+	"os/exec"
 	"os/user"
 	"path"
 	"path/filepath"
@@ -52,6 +53,11 @@ mp3 start my-app
 		We will check which option is possible and decide based on that
 		*/
 		target := args[0]
+		if target == "all" {
+			fmt.Println("Starting all services!")
+			runShell("systemctl", "start", "mp3.*", "--all")
+			return
+		}
 		workingDir, err := os.Getwd()
 		if err != nil {
 			fatal("Could not get working directory")
@@ -59,26 +65,28 @@ mp3 start my-app
 		// path to potential new app to create service for
 		var targetPath = path.Join(workingDir, target)
 		// path to potential existing service to start
-		var serviceName = getServiceName(target)
+		if settings.AppName == "" {
+			settings.AppName = strings.TrimSuffix(filepath.Base(targetPath), filepath.Ext(targetPath))
+		}
+		var serviceName = fmt.Sprintf("%s%s.service", serviceNamePrefix, settings.AppName)
 		var targetServicePath = path.Join(systemCtlUnitDir, serviceName)
 
 		if settings.AppName != "" || settings.CreateServiceOnly || (fileExists(targetPath) && !fileExists(targetServicePath)) {
 			// We want to create a new service
-			// Supplement info for service file
-			if settings.AppName == "" {
-				settings.AppName = strings.TrimSuffix(filepath.Base(targetPath), filepath.Ext(targetPath))
-			}
-			serviceName = fmt.Sprintf("%s%s.service", serviceNamePrefix, settings.AppName)
 			settings.ExecStart = targetPath
 			// If we are dealing with a script file, we need to add the interpreter
 			if strings.HasSuffix(target, ".js") {
 				if settings.Interpreter == "" {
-					settings.Interpreter = "/usr/bin/node"
+					nodePath, err := exec.LookPath("node")
+					handleErr(err)
+					settings.Interpreter = nodePath
 				}
 				settings.ExecStart = settings.Interpreter + " " + targetPath
 			} else if strings.HasSuffix(target, ".py") {
 				if settings.Interpreter == "" {
-					settings.Interpreter = "/usr/bin/python3"
+					pythonPath, err := exec.LookPath("node")
+					handleErr(err)
+					settings.Interpreter = pythonPath
 				}
 				settings.ExecStart = settings.Interpreter + " " + targetPath
 			}
@@ -120,7 +128,7 @@ mp3 start my-app
 				fatal("Error generating service file for " + serviceName)
 			}
 
-			fmt.Printf("Created new service file %s", serviceFilePath)
+			fmt.Printf("Created service file %s\n", serviceFilePath)
 			runShell("systemctl", "daemon-reload")
 			if !settings.CreateServiceOnly {
 				runShell("systemctl", "enable", serviceName)
@@ -128,7 +136,7 @@ mp3 start my-app
 			}
 		} else if !fileExists(targetPath) {
 			// We want to start an existing service
-			fmt.Println("Starting existing service")
+			fmt.Println("Trying to start existing service " + serviceName)
 			runShell("systemctl", "start", serviceName)
 		} else {
 			// We don't know what we want

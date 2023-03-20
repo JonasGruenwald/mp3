@@ -4,6 +4,7 @@ Copyright © 2023 Jonas Grünwald
 package cmd
 
 import (
+	"fmt"
 	"github.com/spf13/cobra"
 )
 
@@ -13,8 +14,13 @@ var stopCmd = &cobra.Command{
 	Short: "Stop a running service",
 	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		var serviceName = getServiceName(args[0])
-		runShell("systemctl", "stop", serviceName)
+		if args[0] == "all" {
+			fmt.Println("Stopping all services!")
+			runShell("systemctl", "stop", "mp3.*")
+		} else {
+			var serviceName = getServiceName(args[0])
+			runShell("systemctl", "stop", serviceName)
+		}
 	},
 }
 

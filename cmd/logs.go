@@ -27,7 +27,7 @@ You can pass on args directly to journalctl with --
 					runShell("journalctl", append([]string{"-u", serviceName}, args...)...)
 				} else {
 					// otherwise run default logs call on the service
-					runShell("journalctl", "-u", serviceName, "-n", "100", "-f", "-o", "short")
+					runShell("journalctl", "-u", serviceName, "-n", "50", "-f", "-o", "short")
 				}
 			} else {
 				// args are passed but are not service name - we pass the args on to journalctl for all services
@@ -35,15 +35,15 @@ You can pass on args directly to journalctl with --
 
 			}
 		} else {
-			runShell("journalctl", "-u", "mp3.*", "-n", "100", "-f", "-o", "short")
+			runShell("journalctl", "-u", "mp3.*", "-n", "50", "-f", "-o", "short")
 		}
 
 		if len(args) > 1 {
 			runShell("journalctl", append([]string{"run", "-d"}, args...)...)
 		} else if len(args) > 0 {
-			runShell("journalctl", "-u", getServiceName(args[0]), "-n", "100", "-f", "-o", "short")
+			runShell("journalctl", "-u", getServiceName(args[0]), "-n", "50", "-f", "-o", "short")
 		} else {
-			runShell("journalctl", "-u", "mp3.*", "-n", "100", "-f", "-o", "short")
+			runShell("journalctl", "-u", "mp3.*", "-n", "50", "-f", "-o", "short")
 		}
 	},
 }
