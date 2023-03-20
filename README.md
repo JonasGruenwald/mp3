@@ -47,9 +47,6 @@ mp3 start ./binary-file -- --port 1520
 
 For python and node scripts a default interpreter will be set,
 but you can also specify it with the `--interpreter` flag.
-
-Once an application has been started once, you can always start it again from anywhere with `mp3 start <name>`.
-
 pm2 compatible flags for `start`:
 
 ```shell
@@ -75,6 +72,9 @@ mp3 specific flags
 # Only create a service file, do not start and enable
 --create-only
 ```
+
+After an application has been started once, you can always start it again from anywhere with `mp3 start <name>`.
+
 
 ### Managing processes
 
