@@ -4,9 +4,11 @@ import (
 	"embed"
 	"errors"
 	"fmt"
+	"github.com/jedib0t/go-pretty/v6/text"
 	"os"
 	"os/exec"
 	"path"
+	"strings"
 )
 
 const serviceNamePrefix = "mp3."
@@ -34,6 +36,35 @@ func fatal(message string) {
 
 func getServiceName(target string) string {
 	return fmt.Sprintf("%s%s.service", serviceNamePrefix, target)
+}
+
+func getAppName(serviceName string) string {
+	return strings.TrimSuffix(strings.TrimPrefix(serviceName, "mp3."), ".service")
+}
+
+func colorStatus(status string) string {
+	switch status {
+	case "running":
+		return text.FgGreen.Sprint(status)
+	case "dead":
+		return text.FgRed.Sprint("stopped")
+
+	}
+	return status
+}
+
+func ByteCountSI(b uint64) string {
+	const unit = 1000
+	if b < unit {
+		return fmt.Sprintf("%d B", b)
+	}
+	div, exp := uint64(unit), 0
+	for n := b / unit; n >= unit; n /= unit {
+		div *= unit
+		exp++
+	}
+	return fmt.Sprintf("%.1f %cB",
+		float64(b)/float64(div), "kMGTPE"[exp])
 }
 
 func serviceExists(target string) bool {

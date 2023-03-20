@@ -47,6 +47,7 @@ mp3 start ./binary-file -- --port 1520
 
 For python and node scripts a default interpreter will be set,
 but you can also specify it with the `--interpreter` flag.
+
 pm2 compatible flags for `start`:
 
 ```shell
@@ -87,6 +88,7 @@ mp3 stop app_name
 mp3 delete app_name
 ```
 
+For all commands except delete you can also pass 'all' instead of an app name.
 ### Status & Logs
 
 You can display the status of all mp3 services
