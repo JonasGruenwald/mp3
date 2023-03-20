@@ -1,11 +1,15 @@
 # MP3
 
+![Header image (an mp3 player)](header.png)
+
 MP3 is a small tool that offers a CLI similar to that of [pm2](https://github.com/Unitech/pm2),
 but instead of running a daemon to manage processes, it just creates systemd services files,
 and forwards commands to systemctl and journalctl.
 
 It provides the ease of use offered by pm2 and the ubiquity and reliability of systemd
 without the need to run any extra node-specific software in the background
+
+The name is purely to create confusion.
 
 ## Motivation
 

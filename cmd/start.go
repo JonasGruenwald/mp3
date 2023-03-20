@@ -71,7 +71,7 @@ mp3 start my-app
 		var serviceName = fmt.Sprintf("%s%s.service", serviceNamePrefix, settings.AppName)
 		var targetServicePath = path.Join(systemCtlUnitDir, serviceName)
 
-		if settings.AppName != "" || settings.CreateServiceOnly || (fileExists(targetPath) && !fileExists(targetServicePath)) {
+		if settings.CreateServiceOnly || (fileExists(targetPath) && !fileExists(targetServicePath)) {
 			// We want to create a new service
 			settings.ExecStart = targetPath
 			// If we are dealing with a script file, we need to add the interpreter

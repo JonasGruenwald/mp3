@@ -24,7 +24,8 @@ You can pass on args directly to journalctl with --
 				var serviceName = getServiceName(args[0])
 				// if any other args are passed, pass them on to journalctl
 				if len(args) > 1 {
-					runShell("journalctl", append([]string{"-u", serviceName}, args...)...)
+
+					runShell("journalctl", append([]string{"-u", serviceName}, args[1:]...)...)
 				} else {
 					// otherwise run default logs call on the service
 					runShell("journalctl", "-u", serviceName, "-n", "50", "-f", "-o", "short")
