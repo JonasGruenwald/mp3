@@ -1,21 +1,37 @@
 package cmd
 
 import (
+	"bufio"
 	"embed"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/coreos/go-systemd/v22/dbus"
 	"github.com/jedib0t/go-pretty/v6/text"
+	"io"
+	"log"
 	"os"
 	"os/exec"
 	"path"
+	"strconv"
 	"strings"
+	"time"
 )
 
 const serviceNamePrefix = "mp3."
 const systemCtlUnitDir = "/etc/systemd/system"
 
 var TemplateFs embed.FS
+
+type JournalEntry struct {
+	MESSAGE          interface{}
+	PRIORITY         string
+	SyslogIdentifier string `json:"SYSLOG_IDENTIFIER"`
+	UNIT             string
+	SystemdUnit      string `json:"_SYSTEMD_UNIT"`
+	CmdLine          string `json:"_CMDLINE"`
+	Timestamp        string `json:"__REALTIME_TIMESTAMP"`
+}
 
 func handleErr(err error) {
 	if err != nil {
@@ -101,10 +117,56 @@ func runShell(name string, args ...string) {
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	err := cmd.Run() // add error checking
+	err := cmd.Run()
 	if err != nil {
 		fatal(fmt.Sprintf("Error running shell command %s %s", name, args))
 	}
+}
+
+func runJournal(args []string) {
+	fmt.Println("Running journal with args ", args)
+	cmd := exec.Command("journalctl", append(args, "-o", "json")...)
+	cmd.Stderr = os.Stderr
+	cmd.Stdin = os.Stdin
+	stdout, err := cmd.StdoutPipe()
+	if nil != err {
+		log.Fatalf(
+			"Error obtaining stdout: %s", err.Error())
+	}
+	reader := bufio.NewReader(stdout)
+	go func(reader io.Reader) {
+		scanner := bufio.NewScanner(reader)
+		for scanner.Scan() {
+			// TODO color text based on priority
+			var journalEntry JournalEntry
+			var err = json.Unmarshal([]byte(scanner.Text()), &journalEntry)
+			handleErr(err)
+			message := journalEntry.MESSAGE
+			if message == nil {
+				message = text.FgYellow.Sprint("<message too long, pass -- --all to display anyways>")
+			}
+			timeStampUnix, err := strconv.ParseInt(journalEntry.Timestamp, 10, 64)
+			handleErr(err)
+			timeStamp := time.UnixMicro(timeStampUnix)
+			title := ""
+			if journalEntry.UNIT != "" {
+				title = text.FgYellow.Sprint(getAppName(journalEntry.UNIT))
+			} else if journalEntry.SystemdUnit != "" {
+				title = text.FgCyan.Sprint(getAppName(journalEntry.SystemdUnit))
+			}
+			fmt.Println(fmt.Sprintf(
+				"%s | %s | %s",
+				text.Faint.Sprint(timeStamp.Format("02.01.06 15:04")),
+				title,
+				message,
+			))
+		}
+	}(reader)
+	if err := cmd.Start(); nil != err {
+
+		log.Fatalf("Error starting program: %s, %s", cmd.Path, err.Error())
+	}
+	cmd.Wait()
 }
 
 func forwardServiceCommand(cmd string, args []string) {

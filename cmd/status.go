@@ -96,7 +96,6 @@ var statusCmd = &cobra.Command{
 			}
 		}
 		for _, deadUnit := range deadUnits {
-			fmt.Println(text.FgRed.Sprint("▶ ") + deadUnit)
 			t.AppendRow(table.Row{
 				"",
 				deadUnit,
@@ -107,8 +106,8 @@ var statusCmd = &cobra.Command{
 				colorEnabled("disabled"),
 			})
 		}
-
 		t.SetStyle(table.StyleRounded)
+		t.Style().Options.SeparateRows = true
 		t.Render()
 
 		conn.Close()

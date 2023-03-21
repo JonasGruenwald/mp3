@@ -24,27 +24,27 @@ You can pass on args directly to journalctl with --
 				var serviceName = getServiceName(args[0])
 				// if any other args are passed, pass them on to journalctl
 				if len(args) > 1 {
-
-					runShell("journalctl", append([]string{"-u", serviceName}, args[1:]...)...)
+					runJournal(append([]string{"-u", serviceName}, args[1:]...))
 				} else {
 					// otherwise run default logs call on the service
-					runShell("journalctl", "-u", serviceName, "-n", "50", "-f", "-o", "short")
+					runJournal([]string{"-u", serviceName, "-n", "50", "-f"})
 				}
 			} else {
 				// args are passed but are not service name - we pass the args on to journalctl for all services
-				runShell("journalctl", append([]string{"-u", "mp3.*"}, args...)...)
+				runJournal(append([]string{"-u", "mp3.*"}, args...))
 
 			}
 		} else {
-			runShell("journalctl", "-u", "mp3.*", "-n", "50", "-f", "-o", "short")
+			//runShell("journalctl", "-u", "mp3.*", "-n", "50", "-f", "-o", "short")
+			runJournal([]string{"-u", "mp3.*", "-n", "50", "-f"})
 		}
 
 		if len(args) > 1 {
-			runShell("journalctl", append([]string{"run", "-d"}, args...)...)
+			runJournal(append([]string{"run", "-d"}, args...))
 		} else if len(args) > 0 {
-			runShell("journalctl", "-u", getServiceName(args[0]), "-n", "50", "-f", "-o", "short")
+			runJournal([]string{"-u", getServiceName(args[0]), "-n", "50", "-f"})
 		} else {
-			runShell("journalctl", "-u", "mp3.*", "-n", "50", "-f", "-o", "short")
+			runJournal([]string{"-u", "mp3.*", "-n", "50", "-f"})
 		}
 	},
 }
