@@ -72,6 +72,8 @@ func colorStatus(status string) string {
 		return text.FgGreen.Sprint(status)
 	case "dead":
 		return text.FgRed.Sprint("stopped")
+	case "failed":
+		return text.FgRed.Sprint("failed")
 
 	}
 	return status
@@ -124,7 +126,6 @@ func runShell(name string, args ...string) {
 }
 
 func runJournal(args []string) {
-	fmt.Println("Running journal with args ", args)
 	cmd := exec.Command("journalctl", append(args, "-o", "json")...)
 	cmd.Stderr = os.Stderr
 	cmd.Stdin = os.Stdin

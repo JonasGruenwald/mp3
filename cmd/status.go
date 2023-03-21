@@ -49,7 +49,7 @@ var statusCmd = &cobra.Command{
 				text.FgCyan.Sprint("Uptime"),
 				text.FgCyan.Sprint("Memory"),
 				text.FgCyan.Sprint("CPU"),
-				text.FgCyan.Sprint("Service"),
+				text.FgCyan.Sprint("Startup"),
 			})
 		for _, unit := range units {
 			props, err := conn.GetAllPropertiesContext(ctx, unit.Name)

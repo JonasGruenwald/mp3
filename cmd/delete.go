@@ -27,8 +27,6 @@ var deleteCmd = &cobra.Command{
 		}
 
 		runShell("systemctl", "daemon-reload")
-		runShell("systemctl", "reset-failed", serviceName)
-
 	},
 }
 

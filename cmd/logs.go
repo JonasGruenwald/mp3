@@ -15,7 +15,14 @@ var logsCmd = &cobra.Command{
 mp3 logs
 mp3 logs <app_name>
 
-You can pass on args directly to journalctl with --
+By default it will show the 50 most recent entries and tail the logs, 
+however you can pass any arguments accepted by the journalctl command with --
+
+Example:
+# ge
+mp3 logs -- -n 15
+mp3 logs my_app -- --since 09:00 --until "1 hour ago"
+
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) > 0 {
@@ -35,12 +42,11 @@ You can pass on args directly to journalctl with --
 
 			}
 		} else {
-			//runShell("journalctl", "-u", "mp3.*", "-n", "50", "-f", "-o", "short")
 			runJournal([]string{"-u", "mp3.*", "-n", "50", "-f"})
 		}
 
 		if len(args) > 1 {
-			runJournal(append([]string{"run", "-d"}, args...))
+			runJournal(append([]string{"-u", "mp3.*"}, args...))
 		} else if len(args) > 0 {
 			runJournal([]string{"-u", getServiceName(args[0]), "-n", "50", "-f"})
 		} else {
