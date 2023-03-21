@@ -12,9 +12,21 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/struCoder/pidusage"
 	"os"
+	"path"
+	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 )
+
+func unitFileLoaded(loadedUnits []dbus.UnitStatus, unitFile dbus.UnitFile) bool {
+	for _, lu := range loadedUnits {
+		if path.Join(systemCtlUnitDir, lu.Name) == unitFile.Path {
+			return true
+		}
+	}
+	return false
+}
 
 // statusCmd represents the status command
 var statusCmd = &cobra.Command{
@@ -23,9 +35,9 @@ var statusCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := context.Background()
 		conn, err := dbus.NewSystemdConnectionContext(ctx)
-		handleErr(err)
+		handleErrConn(err, conn)
 		units, err := conn.ListUnitsByPatternsContext(ctx, []string{}, []string{"mp3.*"})
-		handleErr(err)
+		handleErrConn(err, conn)
 
 		t := table.NewWriter()
 		t.SetOutputMirror(os.Stdout)
@@ -37,39 +49,68 @@ var statusCmd = &cobra.Command{
 				text.FgCyan.Sprint("Uptime"),
 				text.FgCyan.Sprint("Memory"),
 				text.FgCyan.Sprint("CPU"),
+				text.FgCyan.Sprint("Service"),
 			})
 		for _, unit := range units {
 			props, err := conn.GetAllPropertiesContext(ctx, unit.Name)
-			handleErr(err)
+			handleErrConn(err, conn)
+			var pidDisplay = ""
 			var memoryDisplay = ""
 			var cpuDisplay = ""
 			var uptimeDisplay = ""
 
 			if unit.SubState == "running" {
+				pidDisplay = fmt.Sprintf("%v", props["MainPID"])
 				memoryCount := props["MemoryCurrent"].(uint64)
 				memoryDisplay = fmt.Sprintf("%v", ByteCountSI(memoryCount))
 				sysInfo, err := pidusage.GetStat(int(props["MainPID"].(uint32)))
-				handleErr(err)
+				handleErrConn(err, conn)
 				cpuDisplay = fmt.Sprintf("%.2f%%", sysInfo.CPU)
 				startTimeStamp, err := strconv.ParseInt(fmt.Sprintf("%v", props["ExecMainStartTimestamp"]), 10, 64)
-				handleErr(err)
-				fmt.Println(startTimeStamp)
+				handleErrConn(err, conn)
 				startTime := time.UnixMicro(startTimeStamp)
 				uptimeDisplay = fmt.Sprintf("%v", time.Now().Sub(startTime).Truncate(time.Second))
 			}
 
 			t.AppendRow(table.Row{
-				props["MainPID"],
+				pidDisplay,
 				getAppName(unit.Name),
 				colorStatus(unit.SubState),
 				uptimeDisplay,
 				memoryDisplay,
 				cpuDisplay,
+				colorEnabled(props["UnitFileState"].(string)),
+			})
+		}
+
+		unitFiles, err := conn.ListUnitFilesByPatternsContext(ctx, []string{}, []string{"mp3.*"})
+		handleErrConn(err, conn)
+
+		var deadUnits []string
+		for _, unitFile := range unitFiles {
+			if !unitFileLoaded(units, unitFile) {
+				deadUnits = append(deadUnits,
+					strings.TrimPrefix(strings.TrimSuffix(filepath.Base(unitFile.Path),
+						filepath.Ext(unitFile.Path),
+					), "mp3."))
+			}
+		}
+		for _, deadUnit := range deadUnits {
+			fmt.Println(text.FgRed.Sprint("▶ ") + deadUnit)
+			t.AppendRow(table.Row{
+				"",
+				deadUnit,
+				colorStatus("dead"),
+				"",
+				"",
+				"",
+				colorEnabled("disabled"),
 			})
 		}
 
 		t.SetStyle(table.StyleRounded)
 		t.Render()
+
 		conn.Close()
 	},
 }

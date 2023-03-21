@@ -27,7 +27,7 @@ var settings = ServiceSettings{}
 
 // startCmd represents the start command
 var startCmd = &cobra.Command{
-	Use:   "start [service]",
+	Use:   "start entrypoint|app_name|all",
 	Short: "Start an application with mp3",
 	Long: `Supply the name of an application entry point in your current working directory,
 and mp3 will create a daemonized service for it for you.

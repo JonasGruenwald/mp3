@@ -4,6 +4,7 @@ import (
 	"embed"
 	"errors"
 	"fmt"
+	"github.com/coreos/go-systemd/v22/dbus"
 	"github.com/jedib0t/go-pretty/v6/text"
 	"os"
 	"os/exec"
@@ -18,6 +19,13 @@ var TemplateFs embed.FS
 
 func handleErr(err error) {
 	if err != nil {
+		fatal(err.Error())
+	}
+}
+
+func handleErrConn(err error, conn *dbus.Conn) {
+	if err != nil {
+		conn.Close()
 		fatal(err.Error())
 	}
 }
@@ -49,6 +57,13 @@ func colorStatus(status string) string {
 	case "dead":
 		return text.FgRed.Sprint("stopped")
 
+	}
+	return status
+}
+
+func colorEnabled(status string) string {
+	if status == "enabled" {
+		return text.Bold.Sprint(status)
 	}
 	return status
 }
@@ -89,5 +104,14 @@ func runShell(name string, args ...string) {
 	err := cmd.Run() // add error checking
 	if err != nil {
 		fatal(fmt.Sprintf("Error running shell command %s %s", name, args))
+	}
+}
+
+func forwardServiceCommand(cmd string, args []string) {
+	if args[0] == "all" {
+		runShell("systemctl", cmd, "mp3.*")
+	} else {
+		var serviceName = getServiceName(args[0])
+		runShell("systemctl", cmd, serviceName)
 	}
 }

@@ -21,9 +21,9 @@ var inspectCmd = &cobra.Command{
 		var serviceName = getServiceName(args[0])
 		ctx := context.Background()
 		conn, err := dbus.NewSystemdConnectionContext(ctx)
-		handleErr(err)
+		handleErrConn(err, conn)
 		props, err := conn.GetAllPropertiesContext(ctx, serviceName)
-		handleErr(err)
+		handleErrConn(err, conn)
 		t := table.NewWriter()
 		t.SetOutputMirror(os.Stdout)
 		t.AppendHeader(
@@ -37,11 +37,8 @@ var inspectCmd = &cobra.Command{
 				element,
 			})
 		}
-		t.SetStyle(table.StyleLight)
-		t.Style().Options.SeparateRows = true
-
+		t.SetStyle(table.StyleColoredDark)
 		t.Render()
-		conn.Close()
 		conn.Close()
 	},
 }
