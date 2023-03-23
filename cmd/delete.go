@@ -18,6 +18,7 @@ var deleteCmd = &cobra.Command{
 
 		runShell("systemctl", "stop", serviceName)
 		runShell("systemctl", "disable", serviceName)
+		runShell("systemctl", "reset-failed", serviceName)
 
 		e := os.Remove(targetServicePath)
 		if e != nil {
@@ -25,6 +26,7 @@ var deleteCmd = &cobra.Command{
 		}
 
 		runShell("systemctl", "daemon-reload")
+
 	},
 }
 

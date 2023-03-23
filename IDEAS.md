@@ -1,13 +1,3 @@
-# Adopt
-
-`mp3 adopt service_path` Adopt a regular systemd service into the mp3 namespace, making it show up in status and logs.
-
-This will just [create a symlink to the units](https://serverfault.com/a/1078481/1010774) service file, e.g. for 
-`mongod.service` it will create a symlink called `mp3.mongod.service` which will be an alias for `mongod` and cause it 
-to show up in mp3.
-
-`mp3 delete mongod` will of course only delete  the symlink and leave the original service untouched.
-
 # Connect
 
 Special Code for starting caddy service with its recommended service file, and setting up a caddyfile structure that

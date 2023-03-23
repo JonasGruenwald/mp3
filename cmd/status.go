@@ -6,6 +6,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"github.com/bastjan/netstat"
 	"github.com/coreos/go-systemd/v22/dbus"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/jedib0t/go-pretty/v6/text"
@@ -39,6 +40,25 @@ var statusCmd = &cobra.Command{
 		units, err := conn.ListUnitsByPatternsContext(ctx, []string{}, []string{"mp3.*"})
 		handleErrConn(err, conn)
 
+		// Get port map
+		processPorts := make(map[int]string)
+		connections, err := netstat.TCP.Connections()
+		handleErr(err)
+		connections6, err := netstat.TCP6.Connections()
+		handleErr(err)
+		connections = append(connections, connections6...)
+		for _, connection := range connections {
+			if processPorts[connection.Pid] == "" {
+				processPorts[connection.Pid] = fmt.Sprintf("%v", connection.Port)
+			} else {
+				if !strings.Contains(processPorts[connection.Pid], strconv.Itoa(connection.Port)) {
+					processPorts[connection.Pid] = fmt.Sprintf("%s, %v",
+						processPorts[connection.Pid],
+						connection.Port)
+				}
+			}
+		}
+
 		t := table.NewWriter()
 		t.SetOutputMirror(os.Stdout)
 		t.AppendHeader(
@@ -49,6 +69,7 @@ var statusCmd = &cobra.Command{
 				text.FgCyan.Sprint("Uptime"),
 				text.FgCyan.Sprint("Memory"),
 				text.FgCyan.Sprint("CPU"),
+				text.FgCyan.Sprint("Ports"),
 				text.FgCyan.Sprint("Startup"),
 			})
 		for _, unit := range units {
@@ -58,9 +79,14 @@ var statusCmd = &cobra.Command{
 			var memoryDisplay = ""
 			var cpuDisplay = ""
 			var uptimeDisplay = ""
+			var portDisplay = ""
 
 			if unit.SubState == "running" {
 				pidDisplay = fmt.Sprintf("%v", props["MainPID"])
+				processPort := processPorts[int(props["MainPID"].(uint32))]
+				if processPort != "" {
+					portDisplay = processPort
+				}
 				memoryCount := props["MemoryCurrent"].(uint64)
 				memoryDisplay = fmt.Sprintf("%v", ByteCountSI(memoryCount))
 				sysInfo, err := pidusage.GetStat(int(props["MainPID"].(uint32)))
@@ -79,6 +105,7 @@ var statusCmd = &cobra.Command{
 				uptimeDisplay,
 				memoryDisplay,
 				cpuDisplay,
+				portDisplay,
 				colorEnabled(props["UnitFileState"].(string)),
 			})
 		}

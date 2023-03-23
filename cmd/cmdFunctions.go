@@ -166,6 +166,25 @@ func runJournal(args []string) {
 			var err = json.Unmarshal([]byte(scanner.Text()), &journalEntry)
 			handleErr(err)
 			message := journalEntry.MESSAGE
+			if journalEntry.PRIORITY != "6" {
+				switch journalEntry.PRIORITY {
+				case "0":
+					fallthrough
+				case "1":
+					fallthrough
+				case "2":
+					message = text.FgRed.Sprint(journalEntry.MESSAGE)
+				case "3":
+					message = text.FgHiRed.Sprint(journalEntry.MESSAGE)
+				case "4":
+					message = text.FgHiYellow.Sprint(journalEntry.MESSAGE)
+				case "5":
+					message = text.Bold.Sprint(journalEntry.MESSAGE)
+				case "7":
+					message = text.Faint.Sprint(journalEntry.MESSAGE)
+				}
+			}
+
 			if message == nil {
 				message = text.FgYellow.Sprint("<message too long, pass -- --all to display anyways>")
 			}
@@ -179,8 +198,8 @@ func runJournal(args []string) {
 				title = text.FgCyan.Sprint(getAppName(journalEntry.SystemdUnit))
 			}
 			fmt.Println(fmt.Sprintf(
-				"%s|%s|%s:",
-				text.Faint.Sprint(timeStamp.Format("02.01.06 15:04")),
+				"%s%s: %s",
+				text.Faint.Sprint(timeStamp.Format("02.01.06 15:04")+"│"),
 				title,
 				message,
 			))
