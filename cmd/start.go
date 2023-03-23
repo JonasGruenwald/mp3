@@ -63,13 +63,17 @@ mp3 start my-app
 			fatal("Could not get working directory")
 		}
 		// path to potential new app to create service for
-		var targetPath = path.Join(workingDir, target)
+		var targetPath = target
+		if !path.IsAbs(targetPath) {
+			targetPath, err = filepath.Abs(target)
+			handleErr(err)
+		}
 		// path to potential existing service to start
 		if settings.AppName == "" {
 			settings.AppName = strings.TrimSuffix(filepath.Base(targetPath), filepath.Ext(targetPath))
 		}
 		var serviceName = fmt.Sprintf("%s%s.service", serviceNamePrefix, settings.AppName)
-		var targetServicePath = path.Join(systemCtlUnitDir, serviceName)
+		var targetServicePath = getServicePath(serviceName)
 
 		if settings.CreateServiceOnly || (fileExists(targetPath) && !fileExists(targetServicePath)) {
 			// We want to create a new service
@@ -115,7 +119,7 @@ mp3 start my-app
 			}
 
 			// create a new file
-			serviceFilePath := path.Join(systemCtlUnitDir, serviceName)
+			serviceFilePath := getServicePath(serviceName)
 			file, err := os.Create(serviceFilePath)
 			if err != nil {
 				fmt.Println(err)

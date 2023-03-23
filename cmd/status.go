@@ -69,7 +69,7 @@ var statusCmd = &cobra.Command{
 				startTimeStamp, err := strconv.ParseInt(fmt.Sprintf("%v", props["ExecMainStartTimestamp"]), 10, 64)
 				handleErrConn(err, conn)
 				startTime := time.UnixMicro(startTimeStamp)
-				uptimeDisplay = fmt.Sprintf("%v", time.Now().Sub(startTime).Truncate(time.Second))
+				uptimeDisplay = humanDuration(time.Now().Sub(startTime).Truncate(time.Second))
 			}
 
 			t.AppendRow(table.Row{

@@ -4,10 +4,8 @@ Copyright © 2023 Jonas Grünwald
 package cmd
 
 import (
-	"os"
-	"path"
-
 	"github.com/spf13/cobra"
+	"os"
 )
 
 // deleteCmd represents the delete command
@@ -16,7 +14,7 @@ var deleteCmd = &cobra.Command{
 	Short: "Delete a service definition that was created with mp3",
 	Run: func(cmd *cobra.Command, args []string) {
 		var serviceName = getServiceName(args[0])
-		var targetServicePath = path.Join(systemCtlUnitDir, serviceName)
+		var targetServicePath = getServicePath(serviceName)
 
 		runShell("systemctl", "stop", serviceName)
 		runShell("systemctl", "disable", serviceName)

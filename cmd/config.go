@@ -1,11 +1,7 @@
-/*
-Copyright © 2023 Jonas Grünwald
-*/
 package cmd
 
 import (
 	"github.com/spf13/cobra"
-	"path"
 )
 
 // configCmd represents the config command
@@ -15,7 +11,7 @@ var configCmd = &cobra.Command{
 	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		var serviceName = getServiceName(args[0])
-		var targetServicePath = path.Join(systemCtlUnitDir, serviceName)
+		var targetServicePath = getServicePath(serviceName)
 		if fileExists(targetServicePath) {
 			runShell("nano", targetServicePath)
 			runShell("systemctl", "daemon-reload")
