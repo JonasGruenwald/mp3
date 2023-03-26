@@ -10,11 +10,14 @@ It can be used to quickly start apps and keep them running forever, restarting t
 provides a nice
 interface to check the status of running apps, and see their logs.
 
+MP3 also contains some tools for an opinionated workflow of connecting apps to a Caddy reverse proxy and some other
+convenience functions.
+
 ## Installation
 
 MP3 is written in Go and can be distributed as a single binary executable.
 
-1. Build using `go build` or download a prebuilt binary
+1. Build using `go build -o mp3` or download a prebuilt binary
 2. Move the `mp3` executable to the desired directory
 3. Add this directory to the PATH environment variable
 4. Verify that you have execute permission on the file
@@ -69,6 +72,7 @@ mp3 specific flags
 After an application has been started once, you can always start it again from anywhere with `mp3 start <name>`.
 
 ### Managing processes
+
 ```shell
 mp3 restart app_name
 mp3 reload app_name
@@ -142,6 +146,7 @@ mp3 setup caddy
 ```
 
 This will convert your `/etc/caddy` directory to the following structure:
+
 ```
 ── /etc/caddy
    ├─ Caddyfile   ← Caddyfile to import everything in sites/
@@ -154,10 +159,13 @@ This will convert your `/etc/caddy` directory to the following structure:
 ```
 
 Now you can connect an app to a domain pointed at your server like so:
+
 ```
 mp3 connect example-app app.example.com
 ```
-MP3 will find the port of your running app, and set up a reverse proxy caddyfile for you, so that https://app.example.com 
+
+MP3 will find the port of your running app, and set up a reverse proxy caddyfile for you, so
+that https://app.example.com
 routes to your mp3 app `example-app`.
 
 You can also generate other types of caddyfiles in the `/sites` directory quickly with mp3
@@ -169,3 +177,7 @@ mp3 connect STATIC example.com
 # Set up an SPA-compatible file server for example.com
 mp3 connect SPA example.com
 ```
+
+# ToDo
+
+- [ ] Notifications on app failure / start 
