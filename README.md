@@ -4,7 +4,7 @@
 
 MP3 is a small tool that offers a CLI similar to that of [pm2](https://github.com/Unitech/pm2),
 but instead of running a daemon to manage processes, it just creates systemd service files,
-and forwards commands to systemd and the systemd joural.
+and forwards commands to systemd and the systemd journal.
 
 It can be used to quickly start apps and keep them running forever, restarting them after reboot or failure. It also
 provides a nice
