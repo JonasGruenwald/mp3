@@ -7,7 +7,7 @@ import (
 
 const serviceNamePrefix = "mp3."
 const systemCtlUnitDir = "/etc/systemd/system"
-
+const systemCtlUnitDirLib = "/lib/systemd/system"
 const (
 	day  = time.Minute * 60 * 24
 	year = 365 * day

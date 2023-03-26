@@ -11,7 +11,7 @@ var configCmd = &cobra.Command{
 	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		var serviceName = getServiceName(args[0])
-		var targetServicePath = getServicePath(serviceName)
+		var targetServicePath = findServicePath(serviceName)
 		if fileExists(targetServicePath) {
 			runShell("nano", targetServicePath)
 			runShell("systemctl", "daemon-reload")

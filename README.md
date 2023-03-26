@@ -3,29 +3,21 @@
 ![Header image (an mp3 player)](header.png)
 
 MP3 is a small tool that offers a CLI similar to that of [pm2](https://github.com/Unitech/pm2),
-but instead of running a daemon to manage processes, it just creates systemd services files,
+but instead of running a daemon to manage processes, it just creates systemd service files,
 and forwards commands to systemd and the systemd joural.
 
-It provides the ease of use offered by pm2 and the ubiquity and reliability of systemd
-without the need to run any extra node-specific software in the background
-
-The name is purely to create confusion.
-
-## Motivation
-
-I want to use systemd on ubuntu where it's already installed, but also want the convenience of being able to
-spin up a new service in a single command without having to mess with configurations.
-
-I also want a filtered overview of systemd services that I created myself, including a nice way to display their status
-and logs.
+It can be used to quickly start apps and keep them running forever, restarting them after reboot or failure. It also
+provides a nice
+interface to check the status of running apps, and see their logs.
 
 ## Installation
 
-mp3 is written in Go and can be distributed as a single binary executable.
+MP3 is written in Go and can be distributed as a single binary executable.
 
-1. Move the executable to the desired directory
-2. Add this directory to the PATH environment variable
-3. Verify that you have execute permission on the file
+1. Build using `go build` or download a prebuilt binary
+2. Move the `mp3` executable to the desired directory
+3. Add this directory to the PATH environment variable
+4. Verify that you have execute permission on the file
 
 ## Usage
 
@@ -51,10 +43,10 @@ but you can also specify it with the `--interpreter` flag.
 pm2 compatible flags for `start`:
 
 ```shell
-# Specify a name for your new app
---name <app_name>
+# Specify a name for the app
+-n --name <app_name>
 
-# Pass extra args
+# Pass extra args to the app
 -- arg1 arg2 arg3
 
 # Delay between automatic restarts
@@ -76,11 +68,7 @@ mp3 specific flags
 
 After an application has been started once, you can always start it again from anywhere with `mp3 start <name>`.
 
-
 ### Managing processes
-
-Commands are the same as in pm2, but just call systemctl commands with the full service name
-
 ```shell
 mp3 restart app_name
 mp3 reload app_name
@@ -89,6 +77,7 @@ mp3 delete app_name
 ```
 
 For all commands except delete you can also pass 'all' instead of an app name.
+
 ### Status & Logs
 
 You can display the status of all mp3 services
@@ -96,6 +85,8 @@ You can display the status of all mp3 services
 ```shell
 mp3 [list|ls|status]
 ```
+
+![status.png](screenshots%2Fstatus.png)
 
 Display the logs for all mp3 services
 
@@ -109,7 +100,72 @@ or for a specific app
 mp3 logs <app_name>
 ```
 
-By default, logs will show the last 100 lines and tail. If you want to change the way logs are displayed, you can pass
-on any arguments to `journalct` with `--`.
+If you want to filter logs or change the they are displayed, you can pass
+on any arguments to `journalct` with `--`, but please do not change the output format, otherwise MP3 will not parse it
+correctly.
 
-If you pass any arguments using this method, the defaults (100 lines tailing) will not be used.
+### Configuring services
+
+MP3 only sets up systemd unit files with a base configuration for you. If you want more control, or you want to change
+the config
+of an existing service, you are expected to edit the unit file yourself.
+
+MP3 provides a shortcut to edit unit files with
+nano and reload the daemon:
+
+```
+mp3 config app_name
+```
+
+### Adopting existing systemd services
+
+MP3 lets you add existing systemd services into the MP3 namespace, so you can manage them via the MP3 CLI.
+
+Example:
+
+```
+mp3 adopt caddy
+```
+
+Always use just the name of the service, without the `.service` suffix when interacting with it via MP3.
+
+### Connecting with Caddy
+
+MP3 Is mainly intended for managing web-apps, it has some special functions to interact with
+the [Caddy web server](https://caddyserver.com/),
+and simplify setting up reverse proxies to running apps.
+
+Before using connect, you need to [install Caddy](https://caddyserver.com/docs/install), and configure it using MP3:
+
+```
+mp3 setup caddy
+```
+
+This will convert your `/etc/caddy` directory to the following structure:
+```
+── /etc/caddy
+   ├─ Caddyfile   ← Caddyfile to import everything in sites/
+   ╰─ /sites
+      ├─ default.conf      ← any old existing Caddyfile
+      ├─ site.b.com.conf
+      ├─ site.b.com.conf   ← mp3 will create conf files for apps like this
+      ├─ site.c.com.conf
+      ╰─ other.net.conf    ← extra conf files for static sites etc.
+```
+
+Now you can connect an app to a domain pointed at your server like so:
+```
+mp3 connect example-app app.example.com
+```
+MP3 will find the port of your running app, and set up a reverse proxy caddyfile for you, so that https://app.example.com 
+routes to your mp3 app `example-app`.
+
+You can also generate other types of caddyfiles in the `/sites` directory quickly with mp3
+
+```
+# Set up a static file server for example.com
+mp3 connect STATIC example.com
+
+# Set up an SPA-compatible file server for example.com
+mp3 connect SPA example.com
+```

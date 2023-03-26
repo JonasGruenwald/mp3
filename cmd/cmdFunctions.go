@@ -2,11 +2,14 @@ package cmd
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/bastjan/netstat"
 	"github.com/coreos/go-systemd/v22/dbus"
 	"github.com/jedib0t/go-pretty/v6/text"
+	"github.com/spf13/viper"
 	"io"
 	"log"
 	"os"
@@ -38,21 +41,101 @@ func fileExists(filePath string) bool {
 	return true
 }
 
+func printErrLn(message string) {
+	fmt.Println(text.FgHiRed.Sprint(message))
+}
+
 func fatal(message string) {
-	fmt.Println(message)
+	printErrLn(message)
 	os.Exit(1)
 }
 
+func remove(s []string, r string) []string {
+	for i, v := range s {
+		if v == r {
+			return append(s[:i], s[i+1:]...)
+		}
+	}
+	return s
+}
+
+func saveConfig() {
+	homeDir, err := os.UserHomeDir()
+	handleErr(err)
+	err = viper.WriteConfigAs(path.Join(homeDir, "mp3-config.yaml"))
+	handleErr(err)
+}
+
+func isAdoptedService(name string) bool {
+	adoptedServices := viper.GetStringSlice("AdoptedServices")
+	for _, service := range adoptedServices {
+		if name+".service" == service {
+			return true
+		}
+	}
+	return false
+}
+
+func getServicePattern() []string {
+	adoptedServices := viper.GetStringSlice("AdoptedServices")
+	return append([]string{"mp3.*"}, adoptedServices...)
+}
+
 func getServiceName(target string) string {
+	if isAdoptedService(target) {
+		return target + ".service"
+	}
 	return fmt.Sprintf("%s%s.service", serviceNamePrefix, target)
 }
 
+// This function is just for constructing a path, not checking if the service path actually exists
 func getServicePath(serviceName string) string {
 	return path.Join(systemCtlUnitDir, serviceName)
 }
 
+func findServicePath(serviceName string) string {
+	ctx := context.Background()
+	conn, err := dbus.NewSystemdConnectionContext(ctx)
+	handleErrConn(err, conn)
+	unitFiles, err := conn.ListUnitFilesByPatternsContext(ctx, []string{}, []string{serviceName})
+	handleErr(err)
+	if len(unitFiles) > 1 {
+		conn.Close()
+		ctx.Done()
+		fatal(fmt.Sprintf("More than one unit file found for service '%s', not sure what to do.", serviceName))
+	} else if len(unitFiles) == 0 {
+		conn.Close()
+		ctx.Done()
+		fatal(fmt.Sprintf("No unit file found for service '%s', not sure what to do.", serviceName))
+	}
+	conn.Close()
+	ctx.Done()
+	return unitFiles[0].Path
+}
+
 func getAppName(serviceName string) string {
 	return strings.TrimSuffix(strings.TrimPrefix(serviceName, "mp3."), ".service")
+}
+
+func buildPortMap() map[int]string {
+	processPorts := make(map[int]string)
+	connections, err := netstat.TCP.Connections()
+	handleErr(err)
+	connections6, err := netstat.TCP6.Connections()
+	handleErr(err)
+	connections = append(connections, connections6...)
+	for _, connection := range connections {
+		if processPorts[connection.Pid] == "" {
+			processPorts[connection.Pid] = fmt.Sprintf("%v", connection.Port)
+		} else {
+			if !strings.Contains(processPorts[connection.Pid], strconv.Itoa(connection.Port)) {
+				processPorts[connection.Pid] = fmt.Sprintf("%s, %v",
+					processPorts[connection.Pid],
+					connection.Port)
+			}
+		}
+	}
+	return processPorts
 }
 
 func colorStatus(status string) string {
@@ -75,7 +158,7 @@ func colorEnabled(status string) string {
 	return status
 }
 
-func ByteCountSI(b uint64) string {
+func humanByteCount(b uint64) string {
 	const unit = 1000
 	if b < unit {
 		return fmt.Sprintf("%d B", b)
@@ -89,10 +172,63 @@ func ByteCountSI(b uint64) string {
 		float64(b)/float64(div), "kMGTPE"[exp])
 }
 
+func humanDuration(d time.Duration) string {
+	if d < day {
+		return d.String()
+	}
+
+	var b strings.Builder
+
+	if d >= year {
+		years := d / year
+		_, err := fmt.Fprintf(&b, "%dy", years)
+		handleErr(err)
+		d -= years * year
+	}
+
+	days := d / day
+	d -= days * day
+	_, err := fmt.Fprintf(&b, "%dd%s", days, d)
+	handleErr(err)
+
+	return b.String()
+}
+
 func serviceExists(target string) bool {
-	var serviceName = getServiceName(target)
-	var targetServicePath = getServicePath(serviceName)
-	return fileExists(targetServicePath)
+	ctx := context.Background()
+	conn, err := dbus.NewSystemdConnectionContext(ctx)
+	handleErrConn(err, conn)
+	unitFiles, err := conn.ListUnitFilesByPatternsContext(ctx, []string{}, []string{target})
+	handleErr(err)
+	conn.Close()
+	ctx.Done()
+	return len(unitFiles) > 0
+}
+
+func ask(question string) bool {
+	if question == "" {
+		question = "continue? [Y/N]"
+	} else {
+		question = question + " [Y/N]"
+	}
+	fmt.Println(question)
+	reader := bufio.NewReader(os.Stdin)
+	for {
+		answer, err := reader.ReadString('\n')
+		if err != nil {
+			fmt.Printf("Read string failed, err: %v\n", err)
+			break
+		}
+		answer = strings.ToLower(strings.TrimSpace(answer))
+		if answer == "y" || answer == "yes" {
+			return true
+		} else if answer == "n" || answer == "no" {
+			break
+		} else {
+			continue
+		}
+	}
+	return false
 }
 
 func runSilent(name string, args ...string) {
@@ -100,6 +236,14 @@ func runSilent(name string, args ...string) {
 	err := cmd.Run()
 	if err != nil {
 		fatal(fmt.Sprintf("Error running command %s %s", name, args))
+	}
+}
+
+func runSilentWithErr(name string, args ...string) {
+	cmd := exec.Command(name, args...)
+	err := cmd.Run()
+	if err != nil {
+		// ignore error, we press on
 	}
 }
 
@@ -126,26 +270,6 @@ func getOutput(command string, args ...string) string {
 		return -1
 	}, string(out))
 	return cleaned
-}
-
-func humanDuration(d time.Duration) string {
-	if d < day {
-		return d.String()
-	}
-
-	var b strings.Builder
-
-	if d >= year {
-		years := d / year
-		fmt.Fprintf(&b, "%dy", years)
-		d -= years * year
-	}
-
-	days := d / day
-	d -= days * day
-	fmt.Fprintf(&b, "%dd%s", days, d)
-
-	return b.String()
 }
 
 func runJournal(args []string) {

@@ -72,10 +72,12 @@ mp3 start my-app
 		if settings.AppName == "" {
 			settings.AppName = strings.TrimSuffix(filepath.Base(targetPath), filepath.Ext(targetPath))
 		}
-		var serviceName = fmt.Sprintf("%s%s.service", serviceNamePrefix, settings.AppName)
-		var targetServicePath = getServicePath(serviceName)
-
-		if settings.CreateServiceOnly || (fileExists(targetPath) && !fileExists(targetServicePath)) {
+		var serviceName = getServiceName(settings.AppName)
+		if settings.CreateServiceOnly || !serviceExists(serviceName) {
+			// Check first that the target file exists
+			if fileExists(targetPath) {
+				fatal("Can't find file: " + targetPath)
+			}
 			// We want to create a new service
 			settings.ExecStart = targetPath
 			// If we are dealing with a script file, we need to add the interpreter
@@ -96,10 +98,7 @@ mp3 start my-app
 			}
 			if settings.UserName == "" {
 				user, err := user.Current()
-				if err != nil {
-					fmt.Println(err.Error())
-					fatal("Can't get user!")
-				}
+				handleErr(err)
 				settings.UserName = user.Username
 			}
 			if settings.WorkingDir == "" {
@@ -113,24 +112,14 @@ mp3 start my-app
 
 			// Constructing the service file
 			tmpl, err := template.ParseFS(TemplateFs, "templates/default-service.tmpl")
-			if err != nil {
-				fmt.Println(err)
-				fatal("Error parsing template file")
-			}
-
+			handleErr(err)
 			// create a new file
 			serviceFilePath := getServicePath(serviceName)
 			file, err := os.Create(serviceFilePath)
-			if err != nil {
-				fmt.Println(err)
-				fatal("Error touching service file for " + serviceName)
-			}
-
+			handleErr(err)
 			// apply the template to the vars map and write the result to file.
 			err = tmpl.Execute(file, settings)
-			if err != nil {
-				fatal("Error generating service file for " + serviceName)
-			}
+			handleErr(err)
 
 			fmt.Printf("Created service file %s\n", serviceFilePath)
 			runShell("systemctl", "daemon-reload")

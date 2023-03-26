@@ -11,14 +11,16 @@ import (
 var rootCmd = &cobra.Command{
 	Use:   "mp3",
 	Short: "A process management utility (not really)",
-	Long: `MP3 is a small tool that offers a CLI similar to that of pm2, 
-but instead of running a daemon to manage processes, it just creates systemd unit services files, 
-and forwards commands to systemctl and journalctl.
-It provides the ease of use offered by pm2 and the ubiquity and reliability of systemd 
-without the need to run any extra node-specific software in the background`,
-	// Uncomment the following line if your bare application
-	// has an action associated with it:
-	// Run: func(cmd *cobra.Command, args []string) { },
+	Long: `MP3 is a convenient CLI for creating and managing systemd services.
+Its syntax is based on the popular node.js process manager 'pm2'.
+
+Start an app with mp3 start app.js, then check its status with mp3 status.`,
+	Run: func(cmd *cobra.Command, args []string) {
+		if !printStatus() {
+			err := cmd.Help()
+			handleErr(err)
+		}
+	},
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
