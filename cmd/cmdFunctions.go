@@ -205,7 +205,7 @@ func serviceExists(target string) bool {
 	return len(unitFiles) > 0
 }
 
-func ask(question string) bool {
+func getConfirmation(question string) bool {
 	if question == "" {
 		question = "continue? [Y/N]"
 	} else {
@@ -229,6 +229,34 @@ func ask(question string) bool {
 		}
 	}
 	return false
+}
+
+func promptSelection(options []string) string {
+	lower := 0
+	upper := len(options) - 1
+	for i, option := range options {
+		fmt.Println(fmt.Sprintf("%v %s",
+			text.FgCyan.Sprintf("[%v]", i),
+			option,
+		))
+	}
+	reader := bufio.NewReader(os.Stdin)
+	for {
+		answer, err := reader.ReadString('\n')
+		if err != nil {
+			fmt.Printf("Read string failed, err: %v\n", err)
+			break
+		}
+		answer = strings.TrimSpace(answer)
+		if idx, err := strconv.Atoi(answer); err == nil && idx >= lower && idx <= upper {
+			return options[idx]
+		} else {
+			fmt.Println(text.FgRed.Sprintf("Input must be between %v and %v",
+				text.Bold.Sprint(lower),
+				text.Bold.Sprint(upper)))
+		}
+	}
+	return options[0]
 }
 
 func runSilent(name string, args ...string) {

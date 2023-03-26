@@ -84,12 +84,17 @@ mp3 connect STATIC example.com
 			}
 		default:
 			{
+
 				// Get App port
 				ctx := context.Background()
 				conn, err := dbus.NewSystemdConnectionContext(ctx)
 				handleErrConn(err, conn)
 
 				serviceName := getServiceName(args[0])
+				// Ensure service exists
+				if !serviceExists(serviceName) {
+					fatal(fmt.Sprintf("Could not find service %s", serviceName))
+				}
 				props, err := conn.GetAllPropertiesContext(ctx, serviceName)
 				handleErrConn(err, conn)
 				conn.Close()
@@ -98,16 +103,19 @@ mp3 connect STATIC example.com
 				appPorts := portMap[int(props["MainPID"].(uint32))]
 
 				if strings.Count(appPorts, ",") > 0 {
-					fatal(fmt.Sprintf("The service %s  exposes more than one port (%s), please set up manually.",
-						text.Bold.Sprint(serviceName),
-						appPorts))
+					fmt.Println(fmt.Sprintf(
+						"The service %s exposes more than one port, which port do you wish to connect?",
+						text.Bold.Sprint(serviceName)))
+					splitPorts := strings.Split(appPorts, ", ")
+					config.Port = promptSelection(splitPorts)
+				} else {
+					config.Port = appPorts
 				}
 				fmt.Println(fmt.Sprintf("Connecting port %s of service %s to domain %s",
-					text.Bold.Sprint(appPorts),
+					text.Bold.Sprint(config.Port),
 					text.Bold.Sprint(serviceName),
 					text.Bold.Sprint(config.Domain),
 				))
-				config.Port = appPorts
 				tmpl, err := template.ParseFS(TemplateFs, "templates/reverse-proxy-caddyfile.tmpl")
 				handleErr(err)
 				file, err := os.Create(configFilePath)

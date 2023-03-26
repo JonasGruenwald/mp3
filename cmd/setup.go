@@ -30,7 +30,7 @@ https://caddyserver.com/docs/install
 			{
 				fmt.Println(`MP3 will create a new caddyfile structure under /etc/caddy,
 your existing /etc/caddy/Caddyfile will be moved.`)
-				if ask("Are you sure you want to do this?") {
+				if getConfirmation("Are you sure you want to do this?") {
 					caddyDirStat, err := os.Stat("/etc/caddy")
 					handleErr(err)
 					dirFileMode := caddyDirStat.Mode()
