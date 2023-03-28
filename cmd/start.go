@@ -75,7 +75,7 @@ mp3 start my-app
 		var serviceName = getServiceName(settings.AppName)
 		if settings.CreateServiceOnly || !serviceExists(serviceName) {
 			// Check first that the target file exists
-			if fileExists(targetPath) {
+			if !fileExists(targetPath) {
 				fatal("Can't find file: " + targetPath)
 			}
 			// We want to create a new service
