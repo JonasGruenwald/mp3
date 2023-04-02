@@ -27,7 +27,7 @@ mp3 logs my_app -- --since 09:00 --until "1 hour ago"
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) > 0 {
 			// check if the first arg is a service name
-			if serviceExists(args[0]) {
+			if serviceExists(getServiceName(args[0])) {
 				var serviceName = getServiceName(args[0])
 				// if any other args are passed, pass them on to journalctl
 				if len(args) > 1 {
@@ -39,16 +39,7 @@ mp3 logs my_app -- --since 09:00 --until "1 hour ago"
 			} else {
 				// args are passed but are not service name - we pass the args on to journalctl for all services
 				runJournal(append([]string{"-u", "mp3.*"}, args...))
-
 			}
-		} else {
-			runJournal([]string{"-u", "mp3.*", "-n", "50", "-f"})
-		}
-
-		if len(args) > 1 {
-			runJournal(append([]string{"-u", "mp3.*"}, args...))
-		} else if len(args) > 0 {
-			runJournal([]string{"-u", getServiceName(args[0]), "-n", "50", "-f"})
 		} else {
 			runJournal([]string{"-u", "mp3.*", "-n", "50", "-f"})
 		}

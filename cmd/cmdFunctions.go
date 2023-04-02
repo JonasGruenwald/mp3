@@ -301,7 +301,8 @@ func getOutput(command string, args ...string) string {
 }
 
 func runJournal(args []string) {
-	cmd := exec.Command("journalctl", append(args, "-o", "json")...)
+	journalArgs := append(args, "-o", "json")
+	cmd := exec.Command("journalctl", journalArgs...)
 	cmd.Stderr = os.Stderr
 	cmd.Stdin = os.Stdin
 	stdout, err := cmd.StdoutPipe()
