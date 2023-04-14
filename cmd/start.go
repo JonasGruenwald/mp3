@@ -47,7 +47,8 @@ mp3 start my-app
 `,
 	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-
+		conn, ctx := connectToSystemd()
+		defer conn.Close()
 		/**
 		We need to figure out if the user wants to spin up a service, or start an existing service.
 		We will check which option is possible and decide based on that
@@ -73,7 +74,7 @@ mp3 start my-app
 			settings.AppName = strings.TrimSuffix(filepath.Base(targetPath), filepath.Ext(targetPath))
 		}
 		var serviceName = getServiceName(settings.AppName)
-		if settings.CreateServiceOnly || !serviceExists(serviceName) {
+		if settings.CreateServiceOnly || !serviceExists(serviceName, conn, ctx) {
 			// Check first that the target file exists
 			if !fileExists(targetPath) {
 				fatal("Can't find file: " + targetPath)

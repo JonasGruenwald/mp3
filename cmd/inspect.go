@@ -4,8 +4,6 @@ Copyright © 2023 Jonas Grünwald
 package cmd
 
 import (
-	"context"
-	"github.com/coreos/go-systemd/v22/dbus"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/spf13/cobra"
@@ -19,11 +17,10 @@ var inspectCmd = &cobra.Command{
 	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		var serviceName = getServiceName(args[0])
-		ctx := context.Background()
-		conn, err := dbus.NewSystemdConnectionContext(ctx)
-		handleErrConn(err, conn)
+		conn, ctx := connectToSystemd()
+		defer conn.Close()
 		props, err := conn.GetAllPropertiesContext(ctx, serviceName)
-		handleErrConn(err, conn)
+		handleErr(err)
 		t := table.NewWriter()
 		t.SetOutputMirror(os.Stdout)
 		t.AppendHeader(
@@ -39,7 +36,6 @@ var inspectCmd = &cobra.Command{
 		}
 		t.SetStyle(table.StyleColoredDark)
 		t.Render()
-		conn.Close()
 	},
 }
 

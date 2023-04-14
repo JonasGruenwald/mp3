@@ -1,9 +1,7 @@
 package cmd
 
 import (
-	"context"
 	"fmt"
-	"github.com/coreos/go-systemd/v22/dbus"
 	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/spf13/cobra"
 	"os"
@@ -86,19 +84,16 @@ mp3 connect STATIC example.com
 			{
 
 				// Get App port
-				ctx := context.Background()
-				conn, err := dbus.NewSystemdConnectionContext(ctx)
-				handleErrConn(err, conn)
+				conn, ctx := connectToSystemd()
+				defer conn.Close()
 
 				serviceName := getServiceName(args[0])
 				// Ensure service exists
-				if !serviceExists(serviceName) {
+				if !serviceExists(serviceName, conn, ctx) {
 					fatal(fmt.Sprintf("Could not find service %s", serviceName))
 				}
 				props, err := conn.GetAllPropertiesContext(ctx, serviceName)
-				handleErrConn(err, conn)
-				conn.Close()
-				ctx.Done()
+				handleErr(err)
 				portMap := buildPortMap()
 				appPorts := portMap[int(props["MainPID"].(uint32))]
 

@@ -10,8 +10,9 @@ var configCmd = &cobra.Command{
 	Short: "Edit the configuration for an MP3 managed app",
 	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
+		conn, ctx := connectToSystemd()
 		var serviceName = getServiceName(args[0])
-		var targetServicePath = findServicePath(serviceName)
+		var targetServicePath = findServicePath(serviceName, conn, ctx)
 		if fileExists(targetServicePath) {
 			runShell("nano", targetServicePath)
 			runShell("systemctl", "daemon-reload")

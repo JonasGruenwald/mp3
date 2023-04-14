@@ -25,9 +25,10 @@ mp3 logs my_app -- --since 09:00 --until "1 hour ago"
 
 `,
 	Run: func(cmd *cobra.Command, args []string) {
+		conn, ctx := connectToSystemd()
 		if len(args) > 0 {
 			// check if the first arg is a service name
-			if serviceExists(getServiceName(args[0])) {
+			if serviceExists(getServiceName(args[0]), conn, ctx) {
 				var serviceName = getServiceName(args[0])
 				// if any other args are passed, pass them on to journalctl
 				if len(args) > 1 {

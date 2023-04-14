@@ -12,12 +12,14 @@ import (
 // adoptCmd represents the adopt command
 var adoptCmd = &cobra.Command{
 	Use:   "adopt",
-	Short: "A brief description of your command",
+	Short: "Adopt a systemd service",
 	Long:  ``,
 	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
+		conn, ctx := connectToSystemd()
+		defer conn.Close()
 		var targetService = args[0] + ".service"
-		var servicePath = findServicePath(targetService)
+		var servicePath = findServicePath(targetService, conn, ctx)
 		var services = viper.GetStringSlice("AdoptedServices")
 		services = append(services, targetService)
 		viper.Set("AdoptedServices", services)

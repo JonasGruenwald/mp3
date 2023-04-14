@@ -27,13 +27,6 @@ func handleErr(err error) {
 	}
 }
 
-func handleErrConn(err error, conn *dbus.Conn) {
-	if err != nil {
-		conn.Close()
-		fatal(err.Error())
-	}
-}
-
 func fileExists(filePath string) bool {
 	if _, err := os.Stat(filePath); errors.Is(err, os.ErrNotExist) {
 		return false
@@ -43,6 +36,16 @@ func fileExists(filePath string) bool {
 
 func printErrLn(message string) {
 	fmt.Println(text.FgHiRed.Sprint(message))
+}
+
+// Returns a new dbus connection and context, must be closed by the caller
+func connectToSystemd() (*dbus.Conn, context.Context) {
+	ctx := context.Background()
+	conn, err := dbus.NewSystemdConnectionContext(ctx)
+	if err != nil {
+		fatal("Error connecting to systemd dbus: " + err.Error())
+	}
+	return conn, ctx
 }
 
 func fatal(message string) {
@@ -93,10 +96,7 @@ func getServicePath(serviceName string) string {
 	return path.Join(systemCtlUnitDir, serviceName)
 }
 
-func findServicePath(serviceName string) string {
-	ctx := context.Background()
-	conn, err := dbus.NewSystemdConnectionContext(ctx)
-	handleErrConn(err, conn)
+func findServicePath(serviceName string, conn *dbus.Conn, ctx context.Context) string {
 	unitFiles, err := conn.ListUnitFilesByPatternsContext(ctx, []string{}, []string{serviceName})
 	handleErr(err)
 	if len(unitFiles) > 1 {
@@ -108,8 +108,6 @@ func findServicePath(serviceName string) string {
 		ctx.Done()
 		fatal(fmt.Sprintf("No unit file found for service '%s', not sure what to do.", serviceName))
 	}
-	conn.Close()
-	ctx.Done()
 	return unitFiles[0].Path
 }
 
@@ -194,10 +192,7 @@ func humanDuration(d time.Duration) string {
 	return b.String()
 }
 
-func serviceExists(target string) bool {
-	ctx := context.Background()
-	conn, err := dbus.NewSystemdConnectionContext(ctx)
-	handleErrConn(err, conn)
+func serviceExists(target string, conn *dbus.Conn, ctx context.Context) bool {
 	unitFiles, err := conn.ListUnitFilesByPatternsContext(ctx, []string{}, []string{target})
 	handleErr(err)
 	conn.Close()
@@ -366,6 +361,9 @@ func runJournal(args []string) {
 }
 
 func forwardServiceCommand(cmd string, args []string) {
+	if len(args) == 0 {
+		fatal("Missing argument: service name or 'all'")
+	}
 	if args[0] == "all" {
 		runShell("systemctl", cmd, "mp3.*")
 	} else {

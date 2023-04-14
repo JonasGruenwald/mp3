@@ -1,9 +1,7 @@
 package cmd
 
 import (
-	"context"
 	"fmt"
-	"github.com/coreos/go-systemd/v22/dbus"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/struCoder/pidusage"
@@ -18,13 +16,12 @@ import (
 
 // Attempts to print the status but will return false if there are no units to display
 func printStatus() bool {
-	ctx := context.Background()
-	conn, err := dbus.NewSystemdConnectionContext(ctx)
-	handleErrConn(err, conn)
+	conn, ctx := connectToSystemd()
+	defer conn.Close()
 	units, err := conn.ListUnitsByPatternsContext(ctx, []string{}, getServicePattern())
-	handleErrConn(err, conn)
+	handleErr(err)
 	unitFiles, err := conn.ListUnitFilesByPatternsContext(ctx, []string{}, getServicePattern())
-	handleErrConn(err, conn)
+	handleErr(err)
 
 	// if there are no units to display, return false so a message can be displayed instead
 	if len(units) == 0 && len(unitFiles) == 0 {
@@ -48,7 +45,7 @@ func printStatus() bool {
 		})
 	for _, unit := range units {
 		props, err := conn.GetAllPropertiesContext(ctx, unit.Name)
-		handleErrConn(err, conn)
+		handleErr(err)
 		var pidDisplay = ""
 		var memoryDisplay = ""
 		var cpuDisplay = ""
@@ -82,10 +79,10 @@ func printStatus() bool {
 			memoryCount := props["MemoryCurrent"].(uint64)
 			memoryDisplay = fmt.Sprintf("%v", humanByteCount(memoryCount))
 			sysInfo, err := pidusage.GetStat(int(props["MainPID"].(uint32)))
-			handleErrConn(err, conn)
+			handleErr(err)
 			cpuDisplay = fmt.Sprintf("%.2f%%", sysInfo.CPU)
 			startTimeStamp, err := strconv.ParseInt(fmt.Sprintf("%v", props["ExecMainStartTimestamp"]), 10, 64)
-			handleErrConn(err, conn)
+			handleErr(err)
 			startTime := time.UnixMicro(startTimeStamp)
 			uptimeDisplay = humanDuration(time.Now().Sub(startTime).Truncate(time.Second))
 		}
@@ -129,6 +126,5 @@ func printStatus() bool {
 	t.Style().Options.SeparateRows = true
 	t.Render()
 
-	conn.Close()
 	return true
 }

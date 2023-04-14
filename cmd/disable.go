@@ -11,6 +11,7 @@ import (
 var disableCmd = &cobra.Command{
 	Use:   "disable app_name|all",
 	Short: "Disable a service (don't run on startup)",
+	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		forwardServiceCommand("disable", args)
 		runShell("systemctl", "daemon-reload")

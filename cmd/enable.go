@@ -11,6 +11,7 @@ import (
 var enableCmd = &cobra.Command{
 	Use:   "enable app_name|all",
 	Short: "Enable a service (run on startup)",
+	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		forwardServiceCommand("enable", args)
 		runShell("systemctl", "daemon-reload")
